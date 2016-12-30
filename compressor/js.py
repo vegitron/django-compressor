@@ -1,5 +1,6 @@
 from compressor.conf import settings
 from compressor.base import Compressor, SOURCE_HUNK, SOURCE_FILE
+import re
 
 
 class JsCompressor(Compressor):
@@ -50,3 +51,26 @@ class JsCompressor(Compressor):
                     ret.append(subnode.output(*args, **kwargs))
                 return '\n'.join(ret)
         return super(JsCompressor, self).output(*args, **kwargs)
+
+    def filter_input(self, forced=False):
+        """
+        Passes each hunk (file or code) to the 'input' methods
+        of the compressor filters.
+        """
+        content = []
+        ends_with_paren = False
+        for hunk in self.hunks(forced):
+            # If a file ends with a function call, say, console.log()
+            # but doesn't have a semicolon, and the next file starts with
+            # a (, the individual files are ok, but when combined you get an
+            # error like TypeError...
+            # Forcing a semicolon in between fixes it.
+            if ends_with_paren:
+                hunk = re.sub("^\s*\(", ";(", hunk)
+
+            if re.match(".*\)\s*$", hunk):
+                ends_with_paren = True
+            else:
+                ends_with_paren = False
+            content.append(hunk)
+        return content

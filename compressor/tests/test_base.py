@@ -353,6 +353,20 @@ class JsAsyncDeferTestCase(SimpleTestCase):
         self.assertEqual(output, attrs)
 
 
+class JSWithParensTestCase(SimpleTestCase):
+    def setUp(self):
+        self.js = """
+        <script src="/static/js/end_with_function.js"></script>
+        <script src="/static/js/wrapped_js_function.js"></script>
+        """
+
+    def test_js_content(self):
+        js_node = JsCompressor(self.js)
+
+        content = js_node.filter_input()
+        self.assertEqual(content[1], ';(function x() {})(window)\n')
+
+
 class CacheTestCase(SimpleTestCase):
 
     def setUp(self):
